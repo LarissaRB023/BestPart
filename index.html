@@ -1,145 +1,147 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-    
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Loop Studio</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loop Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
 
+    <link rel="stylesheet" href="style.css">
 
-<link rel="stylesheet" href="style.css">
-
-<script src="https://unpkg.com/wavesurfer.js"></script>
+    <script src="https://unpkg.com/wavesurfer.js"></script>
 
 </head>
 
 <body>
 
-<div class="background"></div>
+    <div class="background"></div>
 
-<nav>
+    <nav>
 
-<div class="logo">
+        <div class="logo">
+            🎵 LOOP STUDIO
+        </div>
 
-🎵 LOOP STUDIO
+        <div class="menu">
 
-</div>
+            <a href="#">Início</a>
 
-<div class="menu">
+            <a href="#">Biblioteca</a>
 
-<a href="#">Início</a>
+            <a href="#">IA</a>
 
-<a href="#">Biblioteca</a>
+            <a href="#">Conta</a>
 
-<a href="#">IA</a>
+        </div>
 
-<a href="#">Conta</a>
+    </nav>
 
-</div>
+    <main>
 
-</nav>
+        <div class="player">
 
-<main>
+            <div class="top">
 
-<div class="player">
+                <h1>
 
-<div class="top">
+                    Encontre a melhor parte da música.
 
-<h1>
+                </h1>
 
-Encontre a melhor parte da música.
+                <p>
 
-</h1>
+                    Crie loops infinitos dos seus trechos favoritos.
 
-<p>
+                </p>
 
-Crie loops infinitos dos seus trechos favoritos.
+            </div>
 
-</p>
+            <div class="upload">
 
-</div>
+                <input
+                    type="file"
+                    id="audioFile"
+                    accept="audio/*">
 
-<div class="upload">
+            </div>
 
-<input
-type="file"
-id="audioFile"
-accept="audio/*">
+            <div id="waveform"></div>
 
-</div>
+            <div class="time">
 
-<div id="waveform"></div>
+                <span id="current">
 
-<div class="time">
+                    00:00
 
-<span id="current">
+                </span>
 
-00:00
+                <span id="duration">
 
-</span>
+                    00:00
 
-<span id="duration">
+                </span>
 
-00:00
+            </div>
 
-</span>
+            <div class="buttons">
 
-</div>
+                <button id="back">
 
-<div class="buttons">
+                    ⏮
 
-<button id="back">
+                </button>
 
-⏮
+                <button id="play">
 
-</button>
+                    ▶
 
-<button id="play">
+                </button>
 
-▶
+                <button id="forward">
 
-</button>
+                    ⏭
 
-<button id="forward">
+                </button>
 
-⏭
+                <button id="loop">
 
-</button>
+                    🔁
 
-<button id="loop">
+                </button>
 
-🔁
+            </div>
 
-</button>
+            <div class="volume">
 
-</div>
+                <label>
 
-<div class="volume">
+                    Volume
 
-<label>
+                </label>
 
-Volume
+                <input
+                    type="range"
+                    id="volume"
+                    min="0"
+                    max="100"
+                    value="100">
 
-</label>
+            </div>
 
-<input
-type="range"
-id="volume"
-min="0"
-max="100"
-value="100">
+        </div>
 
-</div>
+    </main>
 
-</div>
+    <!-- Load BPM Detector before main player script -->
+    <script src="BPMDetector.js"></script>
 
-</main>
-
-<script src="player.js"></script>
+    <!-- Main player logic -->
+    <script src="player.js"></script>
 
 </body>
 
