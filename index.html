@@ -1,148 +1,285 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loop Studio</title>
+    <title>Loop Studio Pro - Professional Music Looper</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet">
-
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-
     <script src="https://unpkg.com/wavesurfer.js"></script>
-
+    <script src="https://unpkg.com/tone@14.8.49/build/Tone.js"></script>
 </head>
-
 <body>
-
     <div class="background"></div>
 
-    <nav>
-
-        <div class="logo">
-            🎵 LOOP STUDIO
-        </div>
-
+    <!-- NAVIGATION -->
+    <nav class="navbar">
+        <div class="logo">🎵 LOOP STUDIO PRO</div>
         <div class="menu">
-
-            <a href="#">Início</a>
-
-            <a href="#">Biblioteca</a>
-
-            <a href="#">IA</a>
-
-            <a href="#">Conta</a>
-
+            <button class="tab-btn active" data-tab="studio">Studio</button>
+            <button class="tab-btn" data-tab="mixer">Mixer</button>
+            <button class="tab-btn" data-tab="playlists">Playlists</button>
+            <button class="tab-btn" data-tab="youtube">YouTube Music</button>
         </div>
-
+        <div class="user-menu">
+            <button id="save-btn" class="icon-btn" title="Salvar">💾</button>
+            <button id="settings-btn" class="icon-btn" title="Configurações">⚙️</button>
+        </div>
     </nav>
 
-    <main>
+    <!-- MAIN CONTAINER -->
+    <main class="main-container">
+        
+        <!-- ======================== TAB 1: STUDIO ======================== -->
+        <section id="studio-tab" class="tab-content active">
+            <div class="studio-grid">
+                
+                <!-- LEFT PANEL: UPLOAD & BASIC CONTROLS -->
+                <div class="left-panel">
+                    <div class="card">
+                        <h2>📁 Carregar Música</h2>
+                        <input type="file" id="audioFile" accept="audio/*" class="file-input">
+                        <div id="file-info" class="file-info hidden">
+                            <p id="file-name">Arquivo: -</p>
+                            <p id="file-duration">Duração: -</p>
+                        </div>
+                    </div>
 
-        <div class="player">
+                    <!-- BPM SECTION -->
+                    <div class="card">
+                        <h2>🎵 BPM & Tempo</h2>
+                        <div class="bpm-display">
+                            <div class="bpm-value" id="bpm-display">0</div>
+                            <div class="bpm-label">BPM</div>
+                        </div>
+                        <div class="slider-group">
+                            <label>Ajuste Manual BPM</label>
+                            <input type="range" id="bpm-slider" min="40" max="200" value="120" class="slider">
+                            <div class="value-display" id="bpm-value-display">120</div>
+                        </div>
+                        <button id="detect-bpm-btn" class="btn btn-primary">🔍 Detectar BPM</button>
+                    </div>
 
-            <div class="top">
+                    <!-- EFFECTS SECTION -->
+                    <div class="card">
+                        <h2>✨ Efeitos</h2>
+                        <div class="effect-control">
+                            <label>
+                                <input type="checkbox" id="reverb-toggle"> Reverb
+                            </label>
+                            <input type="range" id="reverb-slider" min="0" max="100" value="30" class="slider" disabled>
+                        </div>
+                        <div class="effect-control">
+                            <label>
+                                <input type="checkbox" id="slowed-toggle"> Slowed+Reverb
+                            </label>
+                            <input type="range" id="slowed-slider" min="0.5" max="1" step="0.05" value="0.85" class="slider" disabled>
+                        </div>
+                        <div class="effect-control">
+                            <label>
+                                <input type="checkbox" id="fade-toggle"> Fade In/Out
+                            </label>
+                        </div>
+                    </div>
+                </div>
 
-                <h1>
+                <!-- CENTER PANEL: WAVEFORM & LOOP EDITOR -->
+                <div class="center-panel">
+                    <div class="card">
+                        <h2>📊 Waveform</h2>
+                        <div id="waveform" class="waveform-container"></div>
+                        
+                        <!-- LOOP MARKERS -->
+                        <div class="loop-controls">
+                            <button id="set-start-btn" class="btn btn-secondary">◀ Set Start</button>
+                            <button id="set-end-btn" class="btn btn-secondary">Set End ▶</button>
+                            <button id="clear-loop-btn" class="btn btn-danger">✕ Clear</button>
+                        </div>
 
-                    Encontre a melhor parte da música.
+                        <!-- TIME DISPLAY -->
+                        <div class="time-display">
+                            <div class="time-box">
+                                <span class="time-label">Início</span>
+                                <span id="loop-start-display" class="time-value">0:00</span>
+                            </div>
+                            <div class="time-box">
+                                <span class="time-label">Atual</span>
+                                <span id="current-time" class="time-value">0:00</span>
+                            </div>
+                            <div class="time-box">
+                                <span class="time-label">Fim</span>
+                                <span id="loop-end-display" class="time-value">0:00</span>
+                            </div>
+                            <div class="time-box">
+                                <span class="time-label">Duração</span>
+                                <span id="duration-display" class="time-value">0:00</span>
+                            </div>
+                        </div>
+                    </div>
 
-                </h1>
+                    <!-- PLAYBACK CONTROLS -->
+                    <div class="card">
+                        <h2>▶️ Controles</h2>
+                        <div class="playback-buttons">
+                            <button id="play-btn" class="btn btn-large">▶</button>
+                            <button id="pause-btn" class="btn btn-large">⏸</button>
+                            <button id="stop-btn" class="btn btn-large">⏹</button>
+                        </div>
+                        <div class="playback-buttons">
+                            <button id="back-btn" class="btn">⏮ -5s</button>
+                            <button id="forward-btn" class="btn">+5s ⏭</button>
+                        </div>
+                    </div>
 
-                <p>
+                    <!-- LOOP MODE -->
+                    <div class="card">
+                        <h2>🔁 Modo Loop</h2>
+                        <div class="toggle-group">
+                            <label class="toggle-label">
+                                <input type="checkbox" id="loop-toggle">
+                                <span>Loop Ativo</span>
+                            </label>
+                        </div>
+                        <div id="loop-stats" class="stats-box hidden">
+                            <p>Repetições: <span id="loop-count">0</span></p>
+                            <p>Tempo de Loop: <span id="loop-duration">0:00</span></p>
+                        </div>
+                    </div>
 
-                    Crie loops infinitos dos seus trechos favoritos.
+                    <!-- VOLUME -->
+                    <div class="card">
+                        <h2>🔊 Volume</h2>
+                        <div class="volume-control">
+                            <span class="label">🔇</span>
+                            <input type="range" id="volume-slider" min="0" max="100" value="100" class="slider">
+                            <span class="value" id="volume-value">100%</span>
+                        </div>
+                    </div>
+                </div>
 
-                </p>
+                <!-- RIGHT PANEL: LOOPS LIST & AI -->
+                <div class="right-panel">
+                    <!-- SAVED LOOPS -->
+                    <div class="card">
+                        <h2>📝 Meus Loops</h2>
+                        <div id="loops-list" class="loops-list">
+                            <p class="empty-state">Nenhum loop salvo</p>
+                        </div>
+                    </div>
 
+                    <!-- AI RECOMMENDATIONS -->
+                    <div class="card">
+                        <h2>🤖 IA Assistant</h2>
+                        <button id="ai-suggest-btn" class="btn btn-primary">Sugerir Trecho</button>
+                        <div id="ai-suggestions" class="ai-suggestions hidden">
+                            <p id="ai-text">Carregando...</p>
+                        </div>
+                    </div>
+
+                    <!-- BEAT GRID -->
+                    <div class="card">
+                        <h2>🎯 Beat Grid</h2>
+                        <button id="toggle-beat-grid-btn" class="btn btn-secondary">Ativar Beat Grid</button>
+                        <div id="beats-info" class="beats-info hidden">
+                            <p>Beats detectados: <span id="beats-count">0</span></p>
+                        </div>
+                    </div>
+                </div>
             </div>
+        </section>
 
-            <div class="upload">
+        <!-- ======================== TAB 2: MIXER ======================== -->
+        <section id="mixer-tab" class="tab-content">
+            <div class="mixer-grid">
+                <div class="card">
+                    <h2>🎚️ Mixer - Combinar Múltiplas Músicas</h2>
+                    <p style="color: #a9a9a9; margin-bottom: 20px;">Carregue várias músicas e misture-as juntas</p>
+                    
+                    <div id="mixer-tracks" class="mixer-tracks">
+                        <button class="btn btn-primary" id="add-track-btn">+ Adicionar Faixa</button>
+                    </div>
 
-                <input
-                    type="file"
-                    id="audioFile"
-                    accept="audio/*">
-
+                    <div style="margin-top: 30px; border-top: 1px solid #333; padding-top: 20px;">
+                        <h3>Saída</h3>
+                        <div class="volume-control">
+                            <span class="label">🔇</span>
+                            <input type="range" id="master-volume" min="0" max="100" value="80" class="slider">
+                            <span class="value" id="master-volume-value">80%</span>
+                        </div>
+                        <button class="btn btn-primary" style="width: 100%; margin-top: 10px;">🎙️ Exportar Mix</button>
+                    </div>
+                </div>
             </div>
+        </section>
 
-            <div id="waveform"></div>
+        <!-- ======================== TAB 3: PLAYLISTS ======================== -->
+        <section id="playlists-tab" class="tab-content">
+            <div class="playlists-grid">
+                <div class="card">
+                    <h2>🎵 Minhas Playlists</h2>
+                    <button class="btn btn-primary" id="new-playlist-btn">+ Nova Playlist</button>
+                    
+                    <div id="playlists-container" style="margin-top: 20px;">
+                        <p class="empty-state">Nenhuma playlist criada</p>
+                    </div>
+                </div>
 
-            <div class="time">
-
-                <span id="current">
-
-                    00:00
-
-                </span>
-
-                <span id="duration">
-
-                    00:00
-
-                </span>
-
+                <div class="card">
+                    <h2>⭐ Favoritas</h2>
+                    <div id="favorites-container">
+                        <p class="empty-state">Nenhuma música favoritada</p>
+                    </div>
+                </div>
             </div>
+        </section>
 
-            <div class="buttons">
+        <!-- ======================== TAB 4: YOUTUBE MUSIC ======================== -->
+        <section id="youtube-tab" class="tab-content">
+            <div class="youtube-grid">
+                <div class="card">
+                    <h2>🎬 YouTube Music Integration</h2>
+                    <p style="color: #a9a9a9; margin-bottom: 20px;">Procure e importe músicas do YouTube</p>
+                    
+                    <div class="search-box">
+                        <input type="text" id="youtube-search" placeholder="🔍 Procurar música..." class="search-input">
+                        <button id="youtube-search-btn" class="btn btn-primary">Buscar</button>
+                    </div>
 
-                <button id="back">
+                    <div id="youtube-results" style="margin-top: 20px;">
+                        <p class="empty-state">Nenhuma busca realizada</p>
+                    </div>
+                </div>
 
-                    ⏮
-
-                </button>
-
-                <button id="play">
-
-                    ▶
-
-                </button>
-
-                <button id="forward">
-
-                    ⏭
-
-                </button>
-
-                <button id="loop">
-
-                    🔁
-
-                </button>
-
+                <div class="card">
+                    <h2>📥 Importadas do YouTube</h2>
+                    <div id="imported-yt-videos">
+                        <p class="empty-state">Nenhuma música importada</p>
+                    </div>
+                </div>
             </div>
-
-            <div class="volume">
-
-                <label>
-
-                    Volume
-
-                </label>
-
-                <input
-                    type="range"
-                    id="volume"
-                    min="0"
-                    max="100"
-                    value="100">
-
-            </div>
-
-        </div>
-
+        </section>
     </main>
 
-    <!-- Load BPM Detector before main player script -->
-    <script src="BPMDetector.js"></script>
+    <!-- MODALS -->
+    <div id="save-loop-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>Salvar Loop</h2>
+            <input type="text" id="loop-name" placeholder="Nome do loop..." class="input">
+            <div class="modal-buttons">
+                <button id="save-loop-confirm" class="btn btn-primary">Salvar</button>
+                <button id="save-loop-cancel" class="btn btn-secondary">Cancelar</button>
+            </div>
+        </div>
+    </div>
 
-    <!-- Main player logic -->
+    <!-- SCRIPTS -->
     <script src="player.js"></script>
-
+    <script src="effects.js"></script>
+    <script src="ai-assistant.js"></script>
+    <script src="mixer.js"></script>
+    <script src="playlists.js"></script>
+    <script src="youtube-integration.js"></script>
 </body>
-
 </html>
