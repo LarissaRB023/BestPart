@@ -103,6 +103,8 @@ audioInput.addEventListener("change",(event)=>{
 
     wavesurfer.loadBlob(file);
 
+    analyzeAudio(file);
+
 });
 
 // ------------------------------
@@ -125,6 +127,10 @@ wavesurfer.on("ready",()=>{
 
     loopEnd=wavesurfer.getDuration();
 
+    playBtn.disabled = false;
+    backBtn.disabled = false;
+    nextBtn.disabled = false;
+
 });
 
 // ------------------------------
@@ -144,7 +150,7 @@ playBtn.addEventListener("click",()=>{
 });
 
 // ------------------------------
-// PLAY
+// PLAY STATE
 // ------------------------------
 
 wavesurfer.on("play",()=>{
@@ -156,7 +162,7 @@ wavesurfer.on("play",()=>{
 });
 
 // ------------------------------
-// PAUSE
+// PAUSE STATE
 // ------------------------------
 
 wavesurfer.on("pause",()=>{
@@ -173,9 +179,17 @@ wavesurfer.on("pause",()=>{
 
 wavesurfer.on("finish",()=>{
 
-    playBtn.innerHTML="▶";
+    if(isLoopEnabled){
 
-    isPlaying=false;
+        wavesurfer.play();
+
+    } else {
+
+        playBtn.innerHTML="▶";
+
+        isPlaying=false;
+
+    }
 
 });
 
@@ -342,7 +356,7 @@ wavesurfer.on("interaction",()=>{
 });
 
 // ------------------------------
-// ESPAÇO = PLAY
+// TECLADO: ESPAÇO = PLAY
 // ------------------------------
 
 document.addEventListener(
@@ -372,7 +386,7 @@ document.addEventListener(
 });
 
 // ------------------------------
-// L = LOOP
+// TECLADO: L = LOOP
 // ------------------------------
 
 document.addEventListener(
@@ -394,7 +408,7 @@ document.addEventListener(
 });
 
 // ------------------------------
-// SETA ESQUERDA
+// TECLADO: SETA ESQUERDA
 // ------------------------------
 
 document.addEventListener(
@@ -412,7 +426,7 @@ document.addEventListener(
 });
 
 // ------------------------------
-// SETA DIREITA
+// TECLADO: SETA DIREITA
 // ------------------------------
 
 document.addEventListener(
@@ -430,8 +444,40 @@ document.addEventListener(
 });
 
 // ------------------------------
-// API PARA PRÓXIMAS VERSÕES
+// TRATAMENTO DE ERRO
 // ------------------------------
+
+wavesurfer.on("error", (error)=>{
+
+    console.error(error);
+
+    alert(
+
+        "Não foi possível carregar esse áudio."
+
+    );
+
+});
+
+// ------------------------------
+// ANÁLISE DE ÁUDIO (BPM)
+// ------------------------------
+
+async function analyzeAudio(file){
+
+    const detector = new BPMDetector();
+
+    const analysis = await detector.analyze(file);
+
+    console.log("BPM detectado:", analysis.bpm);
+
+    console.log("Beats:", analysis.beats);
+
+}
+
+// ======================================================
+// API PÚBLICA
+// ======================================================
 
 function setLoop(start,end){
 
@@ -489,278 +535,36 @@ function getPlayer(){
 
 }
 
-// player.js - continuação
-
-// Atualiza tempo atual enquanto toca
-wavesurfer.on("timeupdate", (time) => {
-    current.textContent = formatTime(time);
-});
-
-
-// Atualiza duração quando o áudio carregar
-wavesurfer.on("ready", () => {
-    const durationTime = wavesurfer.getDuration();
-
-    duration.textContent = formatTime(durationTime);
-
-    play.disabled = false;
-    back.disabled = false;
-    forward.disabled = false;
-});
-
-
-// Quando terminar o áudio
-wavesurfer.on("finish", () => {
-
-    if(loopEnabled){
-        wavesurfer.play();
-    } else {
-        play.innerHTML = "▶";
-    }
-
-});
-
-
-// Erro ao carregar arquivo
-wavesurfer.on("error", (error)=>{
-
-    console.error(error);
-
-    alert(
-        "Não foi possível carregar esse áudio."
-    );
-
-});
-
-
-// Controle de teclado
-document.addEventListener(
-"keydown",
-(e)=>{
-
-    switch(e.code){
-
-        case "Space":
-
-            e.preventDefault();
-
-            wavesurfer.playPause();
-
-            break;
-
-
-        case "ArrowLeft":
-
-            wavesurfer.skip(-5);
-
-            break;
-
-
-        case "ArrowRight":
-
-            wavesurfer.skip(5);
-
-            break;
-
-
-        case "KeyL":
-
-            toggleLoop();
-
-            break;
-
-    }
-
-});
-
-
-
-// Função para carregar áudio manualmente
-function loadAudio(file){
-
-    if(!file) return;
-
-
-    const url = URL.createObjectURL(file);
-
-
-    wavesurfer.load(url);
-
-
-}
-
-
-
-// Input de arquivo
-audioFile.addEventListener(
-"change",
-(e)=>{
-
-    const file = e.target.files[0];
-
-    loadAudio(file);
-
-});
-
-
-
-// Botão play/pause
-play.addEventListener(
-"click",
-()=>{
-
-    wavesurfer.playPause();
-
-});
-
-
-// Atualiza botão play
-wavesurfer.on(
-"play",
-()=>{
-
-    play.innerHTML="⏸";
-
-});
-
-
-wavesurfer.on(
-"pause",
-()=>{
-
-    play.innerHTML="▶";
-
-});
-
-
-// Botão voltar
-back.addEventListener(
-"click",
-()=>{
-
-    wavesurfer.skip(-5);
-
-});
-
-
-// Botão avançar
-forward.addEventListener(
-"click",
-()=>{
-
-    wavesurfer.skip(5);
-
-});
-
-
-// Volume
-volume.addEventListener(
-"input",
-()=>{
-
-    wavesurfer.setVolume(
-        volume.value
-    );
-
-});
-
-
-// Sistema de loop
-let loopEnabled = false;
-
-
-function toggleLoop(){
-
-    loopEnabled = !loopEnabled;
-
-
-    loop.classList.toggle(
-        "active",
-        loopEnabled
-    );
-
-
-}
-
-
-loop.addEventListener(
-"click",
-()=>{
-
-    toggleLoop();
-
-});
-
-
-
-// Exportar funções
+// Exportar para window
 window.player = {
 
     play(){
-        wavesurfer.play();
+        play();
     },
-
 
     pause(){
-        wavesurfer.pause();
+        pause();
     },
-
 
     stop(){
-        wavesurfer.stop();
+        stop();
     },
-
 
     setLoop(value){
-
-        loopEnabled = value;
-
+        if(value) enableLoop();
+        else disableLoop();
     },
-
 
     getDuration(){
-
-        return wavesurfer.getDuration();
-
+        return getDuration();
     },
 
-
     getCurrentTime(){
+        return getCurrentTime();
+    },
 
-        return wavesurfer.getCurrentTime();
-
+    setLoopRegion(start, end){
+        setLoop(start, end);
     }
 
 };
-
-audioFile.addEventListener("change", async (e)=>{
-
-    const file = e.target.files[0];
-
-    // carrega normalmente
-    wavesurfer.load(
-        URL.createObjectURL(file)
-    );
-
-
-    // analisa BPM
-    const detector = new BPMDetector();
-
-    const analysis =
-        await detector.analyze(file);
-
-
-
-    console.log(
-        "BPM detectado:",
-        analysis.bpm
-    );
-
-
-    console.log(
-        "Beats:",
-        analysis.beats
-    );
-
-
-});
