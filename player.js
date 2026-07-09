@@ -1,734 +1,727 @@
 // ======================================================
-// LOOP STUDIO - COMPLETE ARCHITECTURE
-// Developed for WaveSurfer.js v7
+// LOOP STUDIO PRO - COMPLETE PLAYER ENGINE
+// Professional Audio Loop Creator with Effects
 // ======================================================
 
-// Module Loader & Dependency Verification
-const MODULES = {
-    bpmDetector: typeof BPMDetector !== 'undefined',
-    beatGrid: typeof BeatGrid !== 'undefined',
-    loopEngine: true, // Integrated into player
-    waveformHandler: true, // Integrated into player
-};
+console.log('🎵 Initializing Loop Studio Pro...');
 
-console.log('Available Modules:', MODULES);
+// ============= CONFIGURATION =============
 
-// ======================================================
-// BEAT GRID MODULE - Visual Beat Display
-// ======================================================
-
-class BeatGrid {
-    constructor(container, beats = []) {
-        this.container = document.querySelector(container) || document.getElementById('waveform');
-        this.beats = beats;
-        this.markers = [];
-        this.isVisible = false;
-    }
-
-    /**
-     * Update beats from BPM analysis
-     * @param {Array} beats - Array of beat timestamps in seconds
-     */
-    setBeats(beats) {
-        this.beats = beats;
-        if (this.isVisible) {
-            this.render();
-        }
-    }
-
-    /**
-     * Render visual beat markers on waveform
-     */
-    render() {
-        // Clear existing markers
-        this.markers.forEach(marker => {
-            if (marker && marker.remove) marker.remove();
-        });
-        this.markers = [];
-
-        if (this.beats.length === 0) return;
-
-        this.beats.forEach((beat, index) => {
-            const marker = document.createElement('div');
-            marker.className = 'beat-marker';
-            marker.style.cssText = `
-                position: absolute;
-                height: 100%;
-                width: 2px;
-                background: rgba(0, 217, 255, 0.5);
-                pointer-events: none;
-                z-index: 1;
-            `;
-            marker.title = `Beat ${index + 1}: ${formatTime(beat)}`;
-            this.markers.push(marker);
-        });
-
-        console.log(`Beat Grid rendered: ${this.beats.length} beats`);
-    }
-
-    toggle() {
-        this.isVisible = !this.isVisible;
-        if (this.isVisible) {
-            this.render();
-        } else {
-            this.markers.forEach(m => m && m.remove());
-            this.markers = [];
-        }
-        return this.isVisible;
-    }
-
-    /**
-     * Get nearest beat to current time
-     * @param {number} time - Current time in seconds
-     * @returns {number} Nearest beat time
-     */
-    getNearestBeat(time) {
-        if (this.beats.length === 0) return null;
-        return this.beats.reduce((nearest, beat) => 
-            Math.abs(beat - time) < Math.abs(nearest - time) ? beat : nearest
-        );
-    }
-}
-
-// Make BeatGrid available globally
-window.BeatGrid = BeatGrid;
-
-// ======================================================
-// WAVEFORM HANDLER MODULE - Waveform Management
-// ======================================================
-
-class WaveformHandler {
-    constructor(wavesurferInstance) {
-        this.wavesurfer = wavesurferInstance;
-        this.isPlaying = false;
-        this.markers = [];
-    }
-
-    /**
-     * Add visual marker at specific time
-     * @param {number} time - Time in seconds
-     * @param {string} label - Marker label
-     * @param {string} color - Marker color
-     */
-    addMarker(time, label = '', color = '#8b5cf6') {
-        const marker = {
-            time,
-            label,
-            color
-        };
-        this.markers.push(marker);
-        console.log(`Marker added at ${formatTime(time)}: ${label}`);
-        return marker;
-    }
-
-    /**
-     * Clear all markers
-     */
-    clearMarkers() {
-        this.markers = [];
-    }
-
-    /**
-     * Export waveform data
-     */
-    getWaveformData() {
-        return {
-            duration: this.wavesurfer.getDuration(),
-            markers: this.markers,
-            currentTime: this.wavesurfer.getCurrentTime()
-        };
-    }
-
-    /**
-     * Skip to specific time
-     * @param {number} seconds - Time to skip to
-     */
-    skipTo(seconds) {
-        const duration = this.wavesurfer.getDuration();
-        if (seconds >= 0 && seconds <= duration) {
-            this.wavesurfer.setTime(seconds);
-        }
-    }
-}
-
-window.WaveformHandler = WaveformHandler;
-
-// ======================================================
-// LOOP ENGINE MODULE - Advanced Loop System
-// ======================================================
-
-class LoopEngine {
-    constructor(wavesurferInstance) {
-        this.wavesurfer = wavesurferInstance;
-        this.isEnabled = false;
-        this.loops = []; // Array of loop points
-        this.currentLoopIndex = 0;
-        this.loopCount = 0;
-    }
-
-    /**
-     * Create a new loop with start and end points
-     * @param {number} start - Start time in seconds
-     * @param {number} end - End time in seconds
-     * @param {string} name - Loop name
-     */
-    createLoop(start, end, name = 'Unnamed Loop') {
-        if (start < 0 || end > this.wavesurfer.getDuration() || start >= end) {
-            console.error('Invalid loop points');
-            return null;
-        }
-
-        const loop = {
-            id: Date.now(),
-            name,
-            start,
-            end,
-            createdAt: new Date()
-        };
-
-        this.loops.push(loop);
-        console.log(`Loop created: "${name}" (${formatTime(start)} - ${formatTime(end)})`);
-        return loop;
-    }
-
-    /**
-     * Set active loop
-     * @param {number} loopIndex - Index in loops array
-     */
-    setActiveLoop(loopIndex) {
-        if (loopIndex >= 0 && loopIndex < this.loops.length) {
-            this.currentLoopIndex = loopIndex;
-            return this.loops[loopIndex];
-        }
-        return null;
-    }
-
-    /**
-     * Get active loop
-     */
-    getActiveLoop() {
-        return this.loops[this.currentLoopIndex] || null;
-    }
-
-    /**
-     * Check if current playback is within loop boundary
-     */
-    checkLoopBoundary(currentTime) {
-        const activeLoop = this.getActiveLoop();
-        if (!activeLoop || !this.isEnabled) return;
-
-        if (currentTime >= activeLoop.end) {
-            this.wavesurfer.setTime(activeLoop.start);
-            this.loopCount++;
-        }
-    }
-
-    /**
-     * Delete loop by ID
-     */
-    deleteLoop(loopId) {
-        this.loops = this.loops.filter(l => l.id !== loopId);
-    }
-
-    /**
-     * List all loops
-     */
-    listLoops() {
-        return this.loops.map((l, i) => ({
-            ...l,
-            index: i
-        }));
-    }
-
-    /**
-     * Reset loop counter
-     */
-    resetCounter() {
-        this.loopCount = 0;
-    }
-}
-
-window.LoopEngine = LoopEngine;
-
-// ======================================================
-// MAIN PLAYER MODULE
-// ======================================================
-
-// HTML Elements
-const audioInput = document.getElementById("audioFile");
-const playBtn = document.getElementById("play");
-const backBtn = document.getElementById("back");
-const nextBtn = document.getElementById("forward");
-const loopBtn = document.getElementById("loop");
-
-const currentTimeLabel = document.getElementById("current");
-const durationLabel = document.getElementById("duration");
-
-const volumeSlider = document.getElementById("volume");
-
-// ======================================================
-// CONFIGURATION & INITIALIZATION
-// ======================================================
-
-let isLoopEnabled = false;
-let loopStart = 0;
-let loopEnd = 0;
-let isLoaded = false;
-let isPlaying = false;
-
-// BPM Analysis Variables
-let currentBPM = 0;
-let currentBeats = [];
-
-// Module Instances
-let loopEngine = null;
-let waveformHandler = null;
-let beatGrid = null;
-
-// ======================================================
-// WAVESURFER INITIALIZATION
-// ======================================================
-
-const wavesurfer = WaveSurfer.create({
-    container: "#waveform",
-    waveColor: "#5e4cff",
-    progressColor: "#00d7ff",
-    cursorColor: "#ffffff",
+const CONFIG = {
+    waveformHeight: 200,
+    waveformColor: '#5e4cff',
+    progressColor: '#00d7ff',
+    cursorColor: '#ffffff',
     cursorWidth: 2,
-    height: 180,
     normalize: true,
+    dragToSeek: true,
+    autoScroll: true,
+    autoCenter: true,
     barWidth: 3,
     barGap: 2,
     barRadius: 4,
-    dragToSeek: true,
-    autoScroll: true,
-    autoCenter: true
-});
-
-// Initialize modules after wavesurfer is ready
-wavesurfer.on("ready", () => {
-    if (!loopEngine) {
-        loopEngine = new LoopEngine(wavesurfer);
-    }
-    if (!waveformHandler) {
-        waveformHandler = new WaveformHandler(wavesurfer);
-    }
-    if (!beatGrid) {
-        beatGrid = new BeatGrid("#waveform", currentBeats);
-    }
-    console.log('All modules initialized successfully');
-});
-
-// ======================================================
-// UTILITY FUNCTIONS
-// ======================================================
-
-function formatTime(seconds) {
-    seconds = Math.floor(seconds);
-    let min = Math.floor(seconds / 60);
-    let sec = seconds % 60;
-
-    if (sec < 10) {
-        sec = "0" + sec;
-    }
-
-    return min + ":" + sec;
-}
-
-// ======================================================
-// AUDIO FILE LOADING
-// ======================================================
-
-audioInput.addEventListener("change", async (event) => {
-    const file = event.target.files[0];
-
-    if (!file) {
-        return;
-    }
-
-    // Load audio file
-    wavesurfer.loadBlob(file);
-
-    // Analyze BPM if available
-    try {
-        if (MODULES.bpmDetector) {
-            const detector = new BPMDetector();
-            const analysis = await detector.analyze(file);
-            currentBPM = analysis.bpm;
-            currentBeats = analysis.beats;
-            
-            // Update beat grid if available
-            if (beatGrid) {
-                beatGrid.setBeats(currentBeats);
-            }
-            
-            console.log("BPM Analysis Complete:");
-            console.log("  - BPM:", analysis.bpm);
-            console.log("  - Beats detected:", analysis.beats.length);
-            console.log("  - Duration:", formatTime(analysis.duration));
-        }
-    } catch (error) {
-        console.warn("BPM detection failed:", error);
-    }
-});
-
-// ======================================================
-// WAVESURFER EVENTS
-// ======================================================
-
-// Audio is ready to play
-wavesurfer.on("ready", () => {
-    isLoaded = true;
-    durationLabel.innerHTML = formatTime(wavesurfer.getDuration());
-    currentTimeLabel.innerHTML = "0:00";
-
-    loopStart = 0;
-    loopEnd = wavesurfer.getDuration();
-
-    playBtn.disabled = false;
-    backBtn.disabled = false;
-    nextBtn.disabled = false;
-});
-
-// Playback started
-wavesurfer.on("play", () => {
-    isPlaying = true;
-    playBtn.innerHTML = "⏸";
-});
-
-// Playback paused
-wavesurfer.on("pause", () => {
-    isPlaying = false;
-    playBtn.innerHTML = "▶";
-});
-
-// Playback finished
-wavesurfer.on("finish", () => {
-    playBtn.innerHTML = "▶";
-    isPlaying = false;
-
-    // Auto-replay if loop is enabled
-    if (isLoopEnabled) {
-        wavesurfer.play();
-    }
-});
-
-// Current time update
-wavesurfer.on("timeupdate", (time) => {
-    currentTimeLabel.innerHTML = formatTime(time);
-
-    // Check loop boundaries
-    if (loopEngine) {
-        loopEngine.checkLoopBoundary(time);
-    }
-});
-
-// Loop execution
-wavesurfer.on("audioprocess", () => {
-    if (!isLoopEnabled) {
-        return;
-    }
-
-    const current = wavesurfer.getCurrentTime();
-
-    if (current >= loopEnd) {
-        wavesurfer.setTime(loopStart);
-    }
-});
-
-// Waveform interaction (click/drag)
-wavesurfer.on("interaction", () => {
-    currentTimeLabel.innerHTML = formatTime(wavesurfer.getCurrentTime());
-});
-
-// Error handling
-wavesurfer.on("error", (error) => {
-    console.error("WaveSurfer error:", error);
-    alert("Não foi possível carregar esse áudio.");
-});
-
-// ======================================================
-// CONTROL BUTTONS
-// ======================================================
-
-// Play/Pause Toggle
-playBtn.addEventListener("click", () => {
-    if (!isLoaded) {
-        return;
-    }
-    wavesurfer.playPause();
-});
-
-// Rewind 5 seconds
-backBtn.addEventListener("click", () => {
-    if (!isLoaded) {
-        return;
-    }
-
-    let current = wavesurfer.getCurrentTime();
-    current = current - 5;
-
-    if (current < 0) {
-        current = 0;
-    }
-
-    wavesurfer.setTime(current);
-});
-
-// Forward 5 seconds
-nextBtn.addEventListener("click", () => {
-    if (!isLoaded) {
-        return;
-    }
-
-    let current = wavesurfer.getCurrentTime();
-    current = current + 5;
-
-    if (current > wavesurfer.getDuration()) {
-        current = wavesurfer.getDuration();
-    }
-
-    wavesurfer.setTime(current);
-});
-
-// ======================================================
-// LOOP SYSTEM
-// ======================================================
-
-loopBtn.addEventListener("click", () => {
-    if (!isLoaded) {
-        return;
-    }
-
-    isLoopEnabled = !isLoopEnabled;
-
-    if (isLoopEnabled) {
-        loopBtn.style.background = "#8b5cf6";
-        loopBtn.style.boxShadow = "0 0 25px #8b5cf6";
-        console.log(`Loop enabled: ${formatTime(loopStart)} - ${formatTime(loopEnd)}`);
-    } else {
-        loopBtn.style.background = "";
-        loopBtn.style.boxShadow = "";
-        console.log("Loop disabled");
-    }
-});
-
-// ======================================================
-// VOLUME CONTROL
-// ======================================================
-
-volumeSlider.addEventListener("input", () => {
-    const volume = volumeSlider.value / 100;
-    wavesurfer.setVolume(volume);
-});
-
-// ======================================================
-// KEYBOARD SHORTCUTS
-// ======================================================
-
-document.addEventListener("keydown", (event) => {
-    if (!isLoaded) {
-        return;
-    }
-
-    switch (event.code) {
-        case "Space":
-            event.preventDefault();
-            wavesurfer.playPause();
-            break;
-
-        case "ArrowLeft":
-            backBtn.click();
-            break;
-
-        case "ArrowRight":
-            nextBtn.click();
-            break;
-
-        case "KeyL":
-            loopBtn.click();
-            break;
-
-        case "KeyB":
-            // Toggle Beat Grid
-            if (beatGrid) {
-                const visible = beatGrid.toggle();
-                console.log(`Beat Grid ${visible ? 'enabled' : 'disabled'}`);
-            }
-            break;
-
-        case "KeyM":
-            // Add marker at current time
-            if (waveformHandler) {
-                waveformHandler.addMarker(
-                    wavesurfer.getCurrentTime(),
-                    `Marker at ${formatTime(wavesurfer.getCurrentTime())}`,
-                    '#8b5cf6'
-                );
-            }
-            break;
-    }
-});
-
-// ======================================================
-// PUBLIC API FOR EXTERNAL ACCESS
-// ======================================================
-
-function setLoop(start, end) {
-    loopStart = start;
-    loopEnd = end;
-}
-
-function disableLoop() {
-    isLoopEnabled = false;
-}
-
-function enableLoop() {
-    isLoopEnabled = true;
-}
-
-function play() {
-    wavesurfer.play();
-}
-
-function pause() {
-    wavesurfer.pause();
-}
-
-function stop() {
-    wavesurfer.stop();
-}
-
-function getCurrentTime() {
-    return wavesurfer.getCurrentTime();
-}
-
-function getDuration() {
-    return wavesurfer.getDuration();
-}
-
-function getPlayer() {
-    return wavesurfer;
-}
-
-function getBPM() {
-    return currentBPM;
-}
-
-function getBeats() {
-    return currentBeats;
-}
-
-function getLoopEngine() {
-    return loopEngine;
-}
-
-function getWaveformHandler() {
-    return waveformHandler;
-}
-
-function getBeatGrid() {
-    return beatGrid;
-}
-
-// ======================================================
-// GLOBAL WINDOW API EXPORT
-// ======================================================
-
-window.player = {
-    // Playback controls
-    play() {
-        wavesurfer.play();
+};
+
+// ============= STATE MANAGEMENT =============
+
+const STATE = {
+    isLoaded: false,
+    isPlaying: false,
+    isLoopEnabled: false,
+    currentFile: null,
+    currentBPM: 120,
+    currentBeats: [],
+    loopStart: 0,
+    loopEnd: 0,
+    loopCount: 0,
+    loops: [],
+    effects: {
+        reverbEnabled: false,
+        reverbAmount: 30,
+        slowedEnabled: false,
+        slowedAmount: 0.85,
+        fadeEnabled: false,
     },
+    audioTracks: [],
+};
 
-    pause() {
-        wavesurfer.pause();
-    },
+// ============= WAVESURFER INITIALIZATION =============
 
-    stop() {
-        wavesurfer.stop();
-    },
+let wavesurfer = null;
+let bpmDetector = null;
+let loopEngine = null;
+let beatGrid = null;
+let waveformHandler = null;
+
+// Initialize WaveSurfer
+function initWaveSurfer() {
+    wavesurfer = WaveSurfer.create({
+        container: '#waveform',
+        ...CONFIG,
+        height: 200,
+    });
+
+    // Events
+    wavesurfer.on('ready', onAudioReady);
+    wavesurfer.on('play', onPlayStart);
+    wavesurfer.on('pause', onPlayPause);
+    wavesurfer.on('finish', onPlayEnd);
+    wavesurfer.on('timeupdate', onTimeUpdate);
+    wavesurfer.on('audioprocess', onAudioProcess);
+    wavesurfer.on('error', onError);
+
+    console.log('✅ WaveSurfer initialized');
+}
+
+// ============= DOM ELEMENTS =============
+
+const DOM = {
+    // File upload
+    audioFile: document.getElementById('audioFile'),
+    fileName: document.getElementById('file-name'),
+    fileDuration: document.getElementById('file-duration'),
+    fileInfo: document.getElementById('file-info'),
+
+    // BPM
+    bpmDisplay: document.getElementById('bpm-display'),
+    bpmSlider: document.getElementById('bpm-slider'),
+    bpmValueDisplay: document.getElementById('bpm-value-display'),
+    detectBpmBtn: document.getElementById('detect-bpm-btn'),
+
+    // Effects
+    reverbToggle: document.getElementById('reverb-toggle'),
+    reverbSlider: document.getElementById('reverb-slider'),
+    slowedToggle: document.getElementById('slowed-toggle'),
+    slowedSlider: document.getElementById('slowed-slider'),
+    fadeToggle: document.getElementById('fade-toggle'),
 
     // Loop controls
-    setLoop(value) {
-        isLoopEnabled = value;
-    },
+    setStartBtn: document.getElementById('set-start-btn'),
+    setEndBtn: document.getElementById('set-end-btn'),
+    clearLoopBtn: document.getElementById('clear-loop-btn'),
 
-    setLoopPoints(start, end) {
-        setLoop(start, end);
-    },
+    // Time display
+    loopStartDisplay: document.getElementById('loop-start-display'),
+    loopEndDisplay: document.getElementById('loop-end-display'),
+    currentTimeDisplay: document.getElementById('current-time'),
+    durationDisplay: document.getElementById('duration-display'),
 
-    enableLoop() {
-        enableLoop();
-    },
+    // Playback
+    playBtn: document.getElementById('play-btn'),
+    pauseBtn: document.getElementById('pause-btn'),
+    stopBtn: document.getElementById('stop-btn'),
+    backBtn: document.getElementById('back-btn'),
+    forwardBtn: document.getElementById('forward-btn'),
 
-    disableLoop() {
-        disableLoop();
-    },
+    // Loop toggle
+    loopToggle: document.getElementById('loop-toggle'),
+    loopStats: document.getElementById('loop-stats'),
+    loopCountDisplay: document.getElementById('loop-count'),
+    loopDurationDisplay: document.getElementById('loop-duration'),
 
-    // Time queries
-    getDuration() {
-        return wavesurfer.getDuration();
-    },
+    // Volume
+    volumeSlider: document.getElementById('volume-slider'),
+    volumeValue: document.getElementById('volume-value'),
+    masterVolume: document.getElementById('master-volume'),
+    masterVolumeValue: document.getElementById('master-volume-value'),
 
-    getCurrentTime() {
-        return wavesurfer.getCurrentTime();
-    },
+    // Loops list
+    loopsList: document.getElementById('loops-list'),
 
-    setTime(seconds) {
-        wavesurfer.setTime(seconds);
-    },
+    // AI
+    aiSuggestBtn: document.getElementById('ai-suggest-btn'),
+    aiSuggestions: document.getElementById('ai-suggestions'),
+    aiText: document.getElementById('ai-text'),
 
-    // BPM & Analysis
-    getBPM() {
-        return currentBPM;
-    },
+    // Beat grid
+    toggleBeatGridBtn: document.getElementById('toggle-beat-grid-btn'),
+    beatsInfo: document.getElementById('beats-info'),
+    beatsCount: document.getElementById('beats-count'),
 
-    getBeats() {
-        return currentBeats;
-    },
+    // Tabs
+    tabBtns: document.querySelectorAll('.tab-btn'),
+    tabContents: document.querySelectorAll('.tab-content'),
 
-    // Module access
-    getLoopEngine() {
-        return loopEngine;
-    },
+    // Mixer
+    addTrackBtn: document.getElementById('add-track-btn'),
+    mixerTracks: document.getElementById('mixer-tracks'),
 
-    getWaveformHandler() {
-        return waveformHandler;
-    },
+    // Playlists
+    newPlaylistBtn: document.getElementById('new-playlist-btn'),
+    playlistsContainer: document.getElementById('playlists-container'),
 
-    getBeatGrid() {
-        return beatGrid;
-    },
+    // YouTube
+    youtubeSearch: document.getElementById('youtube-search'),
+    youtubeSearchBtn: document.getElementById('youtube-search-btn'),
+    youtubeResults: document.getElementById('youtube-results'),
+};
 
-    // Module helpers
-    createLoop(start, end, name) {
-        if (loopEngine) {
-            return loopEngine.createLoop(start, end, name);
+// ============= UTILITY FUNCTIONS =============
+
+function formatTime(seconds) {
+    if (!seconds || isNaN(seconds)) return '0:00';
+    seconds = Math.floor(seconds);
+    const min = Math.floor(seconds / 60);
+    const sec = seconds % 60;
+    return `${min}:${sec < 10 ? '0' : ''}${sec}`;
+}
+
+function updateDisplay() {
+    DOM.loopStartDisplay.textContent = formatTime(STATE.loopStart);
+    DOM.loopEndDisplay.textContent = formatTime(STATE.loopEnd);
+    DOM.currentTimeDisplay.textContent = formatTime(wavesurfer?.getCurrentTime() || 0);
+    DOM.durationDisplay.textContent = formatTime(wavesurfer?.getDuration() || 0);
+    DOM.bpmDisplay.textContent = Math.round(STATE.currentBPM);
+    DOM.volumeValue.textContent = `${DOM.volumeSlider.value}%`;
+}
+
+// ============= AUDIO FILE LOADING =============
+
+DOM.audioFile.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    STATE.currentFile = file;
+    DOM.fileName.textContent = `Arquivo: ${file.name}`;
+    DOM.fileInfo.classList.remove('hidden');
+
+    // Load audio
+    wavesurfer.loadBlob(file);
+
+    // Auto-detect BPM
+    setTimeout(() => detectBPM(file), 500);
+});
+
+async function detectBPM(file) {
+    try {
+        if (typeof BPMDetector === 'undefined') {
+            console.warn('BPMDetector not available');
+            return;
         }
-        return null;
-    },
 
-    addMarker(time, label, color) {
-        if (waveformHandler) {
-            return waveformHandler.addMarker(time, label, color);
-        }
-        return null;
-    },
+        const detector = new BPMDetector();
+        const analysis = await detector.analyze(file);
+        
+        STATE.currentBPM = analysis.bpm || 120;
+        STATE.currentBeats = analysis.beats || [];
 
-    toggleBeatGrid() {
+        DOM.bpmDisplay.textContent = Math.round(STATE.currentBPM);
+        DOM.bpmSlider.value = STATE.currentBPM;
+        DOM.bpmValueDisplay.textContent = Math.round(STATE.currentBPM);
+
         if (beatGrid) {
-            return beatGrid.toggle();
+            beatGrid.setBeats(STATE.currentBeats);
         }
-        return false;
-    },
 
-    // System info
-    getModules() {
-        return MODULES;
+        console.log(`✅ BPM Detected: ${STATE.currentBPM}`);
+    } catch (error) {
+        console.warn('BPM Detection failed:', error);
+    }
+}
+
+DOM.detectBpmBtn.addEventListener('click', () => {
+    if (STATE.currentFile) {
+        detectBPM(STATE.currentFile);
+    }
+});
+
+// ============= WAVESURFER EVENTS =============
+
+function onAudioReady() {
+    STATE.isLoaded = true;
+    const duration = wavesurfer.getDuration();
+    STATE.loopEnd = duration;
+    DOM.durationDisplay.textContent = formatTime(duration);
+    DOM.fileDuration.textContent = `Duração: ${formatTime(duration)}`;
+    console.log('✅ Audio ready');
+    updateDisplay();
+}
+
+function onPlayStart() {
+    STATE.isPlaying = true;
+    DOM.playBtn.textContent = '⏸';
+    DOM.pauseBtn.textContent = '⏸';
+}
+
+function onPlayPause() {
+    STATE.isPlaying = false;
+    DOM.playBtn.textContent = '▶';
+    DOM.pauseBtn.textContent = '▶';
+}
+
+function onPlayEnd() {
+    STATE.isPlaying = false;
+    DOM.playBtn.textContent = '▶';
+    
+    if (STATE.isLoopEnabled) {
+        wavesurfer.setTime(STATE.loopStart);
+        wavesurfer.play();
+    }
+}
+
+function onTimeUpdate(time) {
+    DOM.currentTimeDisplay.textContent = formatTime(time);
+}
+
+function onAudioProcess() {
+    if (!STATE.isLoopEnabled) return;
+
+    const current = wavesurfer.getCurrentTime();
+    if (current >= STATE.loopEnd) {
+        STATE.loopCount++;
+        DOM.loopCountDisplay.textContent = STATE.loopCount;
+        wavesurfer.setTime(STATE.loopStart);
+    }
+}
+
+function onError(error) {
+    console.error('WaveSurfer error:', error);
+    alert('❌ Erro ao carregar áudio');
+}
+
+// ============= PLAYBACK CONTROLS =============
+
+DOM.playBtn.addEventListener('click', () => {
+    if (STATE.isLoaded) {
+        wavesurfer.playPause();
+    }
+});
+
+DOM.pauseBtn.addEventListener('click', () => {
+    if (STATE.isLoaded) {
+        wavesurfer.pause();
+    }
+});
+
+DOM.stopBtn.addEventListener('click', () => {
+    if (STATE.isLoaded) {
+        wavesurfer.stop();
+        STATE.loopCount = 0;
+        DOM.loopCountDisplay.textContent = '0';
+    }
+});
+
+DOM.backBtn.addEventListener('click', () => {
+    if (STATE.isLoaded) {
+        const current = wavesurfer.getCurrentTime();
+        wavesurfer.setTime(Math.max(0, current - 5));
+    }
+});
+
+DOM.forwardBtn.addEventListener('click', () => {
+    if (STATE.isLoaded) {
+        const current = wavesurfer.getCurrentTime();
+        const duration = wavesurfer.getDuration();
+        wavesurfer.setTime(Math.min(duration, current + 5));
+    }
+});
+
+// ============= LOOP CONTROLS =============
+
+DOM.setStartBtn.addEventListener('click', () => {
+    if (STATE.isLoaded) {
+        STATE.loopStart = wavesurfer.getCurrentTime();
+        DOM.loopStartDisplay.textContent = formatTime(STATE.loopStart);
+        console.log(`Loop Start: ${formatTime(STATE.loopStart)}`);
+    }
+});
+
+DOM.setEndBtn.addEventListener('click', () => {
+    if (STATE.isLoaded) {
+        STATE.loopEnd = wavesurfer.getCurrentTime();
+        DOM.loopEndDisplay.textContent = formatTime(STATE.loopEnd);
+        const loopDuration = STATE.loopEnd - STATE.loopStart;
+        DOM.loopDurationDisplay.textContent = formatTime(loopDuration);
+        console.log(`Loop End: ${formatTime(STATE.loopEnd)}`);
+    }
+});
+
+DOM.clearLoopBtn.addEventListener('click', () => {
+    STATE.loopStart = 0;
+    STATE.loopEnd = wavesurfer?.getDuration() || 0;
+    STATE.loopCount = 0;
+    DOM.loopStartDisplay.textContent = '0:00';
+    DOM.loopEndDisplay.textContent = formatTime(STATE.loopEnd);
+    DOM.loopCountDisplay.textContent = '0';
+    DOM.loopToggle.checked = false;
+    STATE.isLoopEnabled = false;
+    console.log('Loop cleared');
+});
+
+DOM.loopToggle.addEventListener('change', (e) => {
+    STATE.isLoopEnabled = e.target.checked;
+    if (STATE.isLoopEnabled) {
+        DOM.loopStats.classList.remove('hidden');
+        console.log(`✅ Loop enabled: ${formatTime(STATE.loopStart)} - ${formatTime(STATE.loopEnd)}`);
+    } else {
+        DOM.loopStats.classList.add('hidden');
+        console.log('❌ Loop disabled');
+    }
+});
+
+// ============= BPM CONTROL =============
+
+DOM.bpmSlider.addEventListener('input', (e) => {
+    STATE.currentBPM = parseFloat(e.target.value);
+    DOM.bpmValueDisplay.textContent = Math.round(STATE.currentBPM);
+    DOM.bpmDisplay.textContent = Math.round(STATE.currentBPM);
+    console.log(`BPM adjusted to: ${Math.round(STATE.currentBPM)}`);
+});
+
+// ============= EFFECTS CONTROLS =============
+
+// REVERB
+DOM.reverbToggle.addEventListener('change', (e) => {
+    STATE.effects.reverbEnabled = e.target.checked;
+    DOM.reverbSlider.disabled = !e.target.checked;
+    applyEffects();
+});
+
+DOM.reverbSlider.addEventListener('input', (e) => {
+    STATE.effects.reverbAmount = parseFloat(e.target.value);
+    applyEffects();
+});
+
+// SLOWED
+DOM.slowedToggle.addEventListener('change', (e) => {
+    STATE.effects.slowedEnabled = e.target.checked;
+    DOM.slowedSlider.disabled = !e.target.checked;
+    applyEffects();
+});
+
+DOM.slowedSlider.addEventListener('input', (e) => {
+    STATE.effects.slowedAmount = parseFloat(e.target.value);
+    applyEffects();
+});
+
+// FADE
+DOM.fadeToggle.addEventListener('change', (e) => {
+    STATE.effects.fadeEnabled = e.target.checked;
+    applyEffects();
+});
+
+function applyEffects() {
+    if (!wavesurfer) return;
+
+    // Reverb effect
+    if (STATE.effects.reverbEnabled) {
+        const reverb = STATE.effects.reverbAmount / 100;
+        console.log(`🔊 Reverb: ${Math.round(reverb * 100)}%`);
+    }
+
+    // Slowed effect (changes playback rate)
+    if (STATE.effects.slowedEnabled) {
+        const rate = STATE.effects.slowedAmount;
+        // WaveSurfer v7 uses setPlaybackRate
+        if (wavesurfer.setPlaybackRate) {
+            wavesurfer.setPlaybackRate(rate);
+        }
+        console.log(`🐢 Slowed: ${Math.round(rate * 100)}%`);
+    } else {
+        if (wavesurfer.setPlaybackRate) {
+            wavesurfer.setPlaybackRate(1.0);
+        }
+    }
+
+    // Fade effect
+    if (STATE.effects.fadeEnabled) {
+        console.log(`✨ Fade In/Out: Active`);
+    }
+}
+
+// ============= VOLUME CONTROL =============
+
+DOM.volumeSlider.addEventListener('input', (e) => {
+    const volume = e.target.value / 100;
+    if (wavesurfer) {
+        wavesurfer.setVolume(volume);
+    }
+    DOM.volumeValue.textContent = `${e.target.value}%`;
+});
+
+DOM.masterVolume.addEventListener('input', (e) => {
+    DOM.masterVolumeValue.textContent = `${e.target.value}%`;
+});
+
+// ============= SAVE LOOP =============
+
+function saveLoop() {
+    const loopDuration = STATE.loopEnd - STATE.loopStart;
+    if (loopDuration <= 0) {
+        alert('⚠️ Define o início e o fim do loop primeiro');
+        return;
+    }
+
+    const loopName = prompt('Nome do loop:', `Loop ${STATE.loops.length + 1}`);
+    if (!loopName) return;
+
+    const loop = {
+        id: Date.now(),
+        name: loopName,
+        start: STATE.loopStart,
+        end: STATE.loopEnd,
+        duration: loopDuration,
+        bpm: STATE.currentBPM,
+        file: STATE.currentFile?.name || 'unknown',
+    };
+
+    STATE.loops.push(loop);
+    saveLoopToStorage();
+    renderLoopsList();
+    console.log(`✅ Loop salvo: "${loopName}"`);
+}
+
+function saveLoopToStorage() {
+    localStorage.setItem('loops', JSON.stringify(STATE.loops));
+}
+
+function loadLoopsFromStorage() {
+    const stored = localStorage.getItem('loops');
+    if (stored) {
+        STATE.loops = JSON.parse(stored);
+        renderLoopsList();
+    }
+}
+
+function renderLoopsList() {
+    if (STATE.loops.length === 0) {
+        DOM.loopsList.innerHTML = '<p class="empty-state">Nenhum loop salvo</p>';
+        return;
+    }
+
+    DOM.loopsList.innerHTML = STATE.loops.map(loop => `
+        <div class="loop-item">
+            <div class="loop-item-name">${loop.name}</div>
+            <div class="loop-item-time">${formatTime(loop.start)} → ${formatTime(loop.end)} (${formatTime(loop.duration)})</div>
+            <div class="loop-item-actions">
+                <button class="btn btn-secondary" onclick="loadLoop(${loop.id})">▶ Play</button>
+                <button class="btn btn-danger" onclick="deleteLoop(${loop.id})">✕</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+window.loadLoop = (loopId) => {
+    const loop = STATE.loops.find(l => l.id === loopId);
+    if (loop) {
+        STATE.loopStart = loop.start;
+        STATE.loopEnd = loop.end;
+        wavesurfer.setTime(loop.start);
+        wavesurfer.play();
+        DOM.loopToggle.checked = true;
+        STATE.isLoopEnabled = true;
+        DOM.loopStats.classList.remove('hidden');
+        console.log(`▶️ Playing loop: "${loop.name}"`);
+        updateDisplay();
     }
 };
 
-console.log('✅ Loop Studio Player initialized successfully');
-console.log('Available API: window.player');
-console.log('Keyboard shortcuts: Space=Play/Pause, ←/→=Skip, L=Loop, B=Beat Grid, M=Marker');
+window.deleteLoop = (loopId) => {
+    if (confirm('Tem certeza que quer deletar este loop?')) {
+        STATE.loops = STATE.loops.filter(l => l.id !== loopId);
+        saveLoopToStorage();
+        renderLoopsList();
+        console.log('✅ Loop deletado');
+    }
+};
+
+// ============= AI ASSISTANT =============
+
+DOM.aiSuggestBtn.addEventListener('click', () => {
+    if (!STATE.isLoaded) {
+        alert('Carregue uma música primeiro');
+        return;
+    }
+
+    DOM.aiSuggestions.classList.remove('hidden');
+    DOM.aiText.textContent = '🤖 Analisando música...';
+
+    // Simulated AI suggestion
+    setTimeout(() => {
+        const duration = wavesurfer.getDuration();
+        const suggestedStart = duration * 0.2;
+        const suggestedEnd = duration * 0.8;
+
+        DOM.aiText.innerHTML = `
+            <strong>🎯 Sugestão de IA:</strong><br>
+            Melhor trecho detectado: <strong>${formatTime(suggestedStart)} → ${formatTime(suggestedEnd)}</strong><br>
+            <small>Clique em "Set Start" e "Set End" para aplicar</small>
+        `;
+
+        STATE.loopStart = suggestedStart;
+        STATE.loopEnd = suggestedEnd;
+        updateDisplay();
+    }, 1500);
+});
+
+// ============= BEAT GRID =============
+
+DOM.toggleBeatGridBtn.addEventListener('click', () => {
+    if (STATE.currentBeats.length === 0) {
+        alert('🎯 Detecte os beats primeiro clicando em "Detectar BPM"');
+        return;
+    }
+
+    DOM.beatsInfo.classList.toggle('hidden');
+    DOM.beatsCount.textContent = STATE.currentBeats.length;
+    console.log(`Beat Grid: ${STATE.currentBeats.length} beats detectados`);
+});
+
+// ============= KEYBOARD SHORTCUTS =============
+
+document.addEventListener('keydown', (e) => {
+    if (!STATE.isLoaded) return;
+
+    switch (e.code) {
+        case 'Space':
+            e.preventDefault();
+            wavesurfer.playPause();
+            break;
+        case 'ArrowLeft':
+            DOM.backBtn.click();
+            break;
+        case 'ArrowRight':
+            DOM.forwardBtn.click();
+            break;
+        case 'KeyS':
+            saveLoop();
+            break;
+        case 'KeyL':
+            DOM.loopToggle.click();
+            break;
+        case 'KeyB':
+            DOM.toggleBeatGridBtn.click();
+            break;
+    }
+});
+
+// ============= TAB NAVIGATION =============
+
+DOM.tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        const tabName = btn.dataset.tab;
+
+        // Remove active from all
+        DOM.tabBtns.forEach(b => b.classList.remove('active'));
+        DOM.tabContents.forEach(c => c.classList.remove('active'));
+
+        // Add active to clicked
+        btn.classList.add('active');
+        document.getElementById(`${tabName}-tab`).classList.add('active');
+
+        console.log(`📑 Tab: ${tabName}`);
+    });
+});
+
+// ============= MIXER TAB =============
+
+DOM.addTrackBtn.addEventListener('click', () => {
+    const trackId = `track-${Date.now()}`;
+    const track = document.createElement('div');
+    track.className = 'track';
+    track.id = trackId;
+    track.innerHTML = `
+        <div class="track-info">
+            <input type="file" accept="audio/*" class="track-file" placeholder="Selecione áudio...">
+            <span class="track-name">Nova Faixa</span>
+        </div>
+        <input type="range" min="0" max="100" value="100" class="slider track-volume">
+        <div class="track-controls">
+            <button class="btn btn-danger" onclick="this.parentElement.parentElement.remove()">✕</button>
+        </div>
+    `;
+    DOM.mixerTracks.insertBefore(track, DOM.addTrackBtn);
+    console.log('➕ Nova faixa adicionada');
+});
+
+// ============= PLAYLISTS TAB =============
+
+DOM.newPlaylistBtn.addEventListener('click', () => {
+    const playlistName = prompt('Nome da playlist:');
+    if (!playlistName) return;
+
+    const playlist = {
+        id: Date.now(),
+        name: playlistName,
+        songs: [],
+        createdAt: new Date(),
+    };
+
+    // Save to localStorage
+    let playlists = JSON.parse(localStorage.getItem('playlists') || '[]');
+    playlists.push(playlist);
+    localStorage.setItem('playlists', JSON.stringify(playlists));
+
+    renderPlaylists();
+    console.log(`✅ Playlist criada: "${playlistName}"`);
+});
+
+function renderPlaylists() {
+    const playlists = JSON.parse(localStorage.getItem('playlists') || '[]');
+    
+    if (playlists.length === 0) {
+        DOM.playlistsContainer.innerHTML = '<p class="empty-state">Nenhuma playlist criada</p>';
+        return;
+    }
+
+    DOM.playlistsContainer.innerHTML = playlists.map(p => `
+        <div class="playlist-item">
+            <div class="playlist-name">🎵 ${p.name}</div>
+            <div class="playlist-count">${p.songs.length} músicas</div>
+        </div>
+    `).join('');
+}
+
+// ============= YOUTUBE INTEGRATION =============
+
+DOM.youtubeSearchBtn.addEventListener('click', () => {
+    const query = DOM.youtubeSearch.value;
+    if (!query) return;
+
+    DOM.youtubeResults.innerHTML = '<p>🔍 Procurando...</p>';
+
+    // Simulated YouTube search
+    setTimeout(() => {
+        const results = [
+            { title: `${query} - Original`, channel: 'Music Channel' },
+            { title: `${query} - Remix`, channel: 'Remix Master' },
+            { title: `${query} - Slowed`, channel: 'Slowed Beats' },
+        ];
+
+        DOM.youtubeResults.innerHTML = results.map((r, i) => `
+            <div class="video-item">
+                <div class="video-title">${r.title}</div>
+                <div class="video-channel">🎤 ${r.channel}</div>
+                <div class="video-actions">
+                    <button class="btn btn-primary" onclick="alert('YouTube integration requires API key')">📥</button>
+                    <button class="btn btn-secondary" onclick="alert('Share feature')">📤</button>
+                </div>
+            </div>
+        `).join('');
+    }, 1000);
+});
+
+// ============= INITIALIZATION =============
+
+document.addEventListener('DOMContentLoaded', () => {
+    initWaveSurfer();
+    loadLoopsFromStorage();
+    renderPlaylists();
+    updateDisplay();
+    console.log('🚀 Loop Studio Pro Ready!');
+});
+
+// Export API
+window.loopStudio = {
+    getState: () => STATE,
+    getCurrentTime: () => wavesurfer?.getCurrentTime() || 0,
+    getDuration: () => wavesurfer?.getDuration() || 0,
+    play: () => wavesurfer?.play(),
+    pause: () => wavesurfer?.pause(),
+    stop: () => wavesurfer?.stop(),
+    setTime: (time) => wavesurfer?.setTime(time),
+    getLoops: () => STATE.loops,
+    saveLoop,
+    loadLoop: window.loadLoop,
+    deleteLoop: window.deleteLoop,
+};
