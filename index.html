@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+    
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loop Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="style.css">
+
+<script src="https://unpkg.com/wavesurfer.js"></script>
+
+</head>
+
+<body>
+
+<div class="background"></div>
+
+<nav>
+
+<div class="logo">
+
+🎵 LOOP STUDIO
+
+</div>
+
+<div class="menu">
+
+<a href="#">Início</a>
+
+<a href="#">Biblioteca</a>
+
+<a href="#">IA</a>
+
+<a href="#">Conta</a>
+
+</div>
+
+</nav>
+
+<main>
+
+<div class="player">
+
+<div class="top">
+
+<h1>
+
+Encontre a melhor parte da música.
+
+</h1>
+
+<p>
+
+Crie loops infinitos dos seus trechos favoritos.
+
+</p>
+
+</div>
+
+<div class="upload">
+
+<input
+type="file"
+id="audioFile"
+accept="audio/*">
+
+</div>
+
+<div id="waveform"></div>
+
+<div class="time">
+
+<span id="current">
+
+00:00
+
+</span>
+
+<span id="duration">
+
+00:00
+
+</span>
+
+</div>
+
+<div class="buttons">
+
+<button id="back">
+
+⏮
+
+</button>
+
+<button id="play">
+
+▶
+
+</button>
+
+<button id="forward">
+
+⏭
+
+</button>
+
+<button id="loop">
+
+🔁
+
+</button>
+
+</div>
+
+<div class="volume">
+
+<label>
+
+Volume
+
+</label>
+
+<input
+type="range"
+id="volume"
+min="0"
+max="100"
+value="100">
+
+</div>
+
+</div>
+
+</main>
+
+<script src="player.js"></script>
+
+</body>
+
+</html>
